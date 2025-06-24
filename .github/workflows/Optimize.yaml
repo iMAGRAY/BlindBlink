@@ -1,0 +1,27 @@
+on:
+  schedule: {cron: '0 3 * * *'}
+  workflow_dispatch: {}
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install -r requirements.txt
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with: {name: mini-capsulegraph}
+      - run: python tools/profile_capsules.py --input dist/mini.cgraph --output dist/profiling.json
+      - run: python tools/ai_graph_eval.py --graph dist/mini.cgraph --metrics dist/profiling.json
+      - run: python tools/render_graph.py dist/mini.cgraph --output dist/graph.png
+      - uses: actions/upload-artifact@v4
+        with: {name: profiling-report, path: [dist/profiling.json, dist/graph.png]}
+      - name: Create optimization PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update profiling & optimization report'
+          title: 'Automated optimization report 🛠'
+          body: 'Сгенерирован новый отчёт по профайлингу и предложения по оптимизации.'
+          branch: 'ci/optimize-report'
