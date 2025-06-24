@@ -1,0 +1,29 @@
+jobs:
+  push-with-pat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout с PAT
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_GITHUB_PAT }}
+
+      - name: Настроить git для пуша с PAT
+        run: |
+          # убрать лишний заголовок, добавляемый actions/checkout
+          git config --unset http.https://github.com/.extraheader
+
+          # подменить origin на URL с x-access-token
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.MY_GITHUB_PAT }}@github.com/${{ github.repository }}.git
+
+          # (опционально) настроить автора коммита
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Внести изменения и запушить
+        run: |
+          # тут ваш код, который меняет файлы
+          echo "// пример" >> src/example.js
+          git add src/example.js
+          git commit -m "Обновление от Codex"
+          git push origin HEAD:main
